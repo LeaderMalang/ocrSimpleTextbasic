@@ -1,29 +1,36 @@
 import cv2
-import sys
+import numpy as np
 import pytesseract
- 
-if __name__ == '__main__':
- 
-  if len(sys.argv) < 2:
-    print('Usage: python ocr_simple.py image.jpg')
-    sys.exit(1)
-   
-  # Read image path from command line
-  imPath = sys.argv[1]
-     
-  # Uncomment the line below to provide path to tesseract manually
-  # pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
- 
-  # Define config parameters.
-  # '-l eng'  for using the English language
-  # '--oem 1' for using LSTM OCR Engine
-  config = ('-l eng --oem 1 --psm 3')
- 
-  # Read image from disk
-  im = cv2.imread(imPath, cv2.IMREAD_COLOR)
- 
-  # Run tesseract OCR on image
-  text = pytesseract.image_to_string(im, config=config)
- 
-  # Print recognized text
-  print(text)
+from PIL import Image
+
+
+def get_string(img_path):
+    # Read image with opencv
+    img = cv2.imread(img_path)
+
+    # Convert to gray
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # Apply dilation and erosion to remove some noise
+    kernel = np.ones((1, 1), np.uint8)
+    img = cv2.dilate(img, kernel, iterations=1)
+    img = cv2.erode(img, kernel, iterations=1)
+
+    # Write image after removed noise
+    cv2.imwrite("removed_noise.png", img)
+
+    #  Apply threshold to get image with only black and white
+    img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 15, -15)
+
+    # Write the image after applying opencv...
+    cv2.imwrite("thresh.png", img)
+
+    # Recognize text with pytesseract
+    result = pytesseract.image_to_string(Image.open("thresh.png"))
+
+    return result
+
+
+print('--- Starting Text Recognition---')
+print(get_string("3.png"))
+print("------- Done -------")
